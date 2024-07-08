@@ -177,12 +177,14 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 
 }
 
-func (c *CodeWriter) WritePush(segment string, value int) {
-	fmt.Printf("writing command: %s %s %d\n", "push", segment, value)
+func (c *CodeWriter) WritePush(segment string, index int) {
+	fmt.Printf("writing command: %s %s %d\n", "push", segment, index)
 
-	if segment == "constant" {
+	switch segment {
+	case "constant":
 		lines := []string{
-			fmt.Sprintf("@%d", value),
+			// index is a value in this case
+			fmt.Sprintf("@%d", index),
 			"D=A",
 			"@SP",
 			"A=M",
@@ -191,8 +193,53 @@ func (c *CodeWriter) WritePush(segment string, value int) {
 			"M=M+1",
 		}
 		c.writeLines(lines)
+	case "local":
+		c.writePushSegment("LCL", index)
+	case "argument":
+		c.writePushSegment("ARG", index)
+	case "this":
+		c.writePushSegment("THIS", index)
+	case "that":
+		c.writePushSegment("THAT", index)
+	case "temp":
+		c.writePushTemp(index)
+	default:
+		fmt.Printf("no matching segment for pop operation: %s", segment)
+		return
 	}
 
+}
+
+func (c *CodeWriter) writePushSegment(source string, index int) {
+	lines := []string{
+		fmt.Sprintf("@%d", index),
+		"D=A",
+		fmt.Sprintf("@%s", source),
+		"A=D+M",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) writePushTemp(index int) {
+	lines := []string{
+		fmt.Sprintf("@%d", index),
+		"D=A",
+		"@R5",
+		"A=D+A",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+	}
+	c.writeLines(lines)
 }
 
 func (c *CodeWriter) WritePop(segment string, index int) {
@@ -248,7 +295,7 @@ func (c *CodeWriter) writePopTemp(index int) {
 		fmt.Sprintf("@%d", index),
 		"D=A",
 		// calculate dest address
-		"@TEMP",
+		"@R5",
 		"D=D+A",
 		// store dest address
 		"@R13",

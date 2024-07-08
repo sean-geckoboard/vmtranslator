@@ -1,4 +1,3 @@
-// push 7
 @7
 D=A
 @SP
@@ -6,21 +5,26 @@ A=M
 M=D
 @SP
 M=M+1
-
-// pop
-@1
+@6
 D=A
-// at argument
-@2
-A=D+M
-D=A
-@13
+@R5
+D=D+A
+@R13
 M=D
-
 @SP
 M=M-1
 A=M
 D=M
-@13
+@R13
 A=M
 M=D
+@6
+D=A
+@R5
+A=D+A
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1

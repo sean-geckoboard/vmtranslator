@@ -1,1 +1,4 @@
 push constant 7
+pop temp 6
+push temp 6
+
