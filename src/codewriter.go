@@ -198,6 +198,73 @@ func (c *CodeWriter) WritePush(segment string, value int) {
 func (c *CodeWriter) WritePop(segment string, index int) {
 	fmt.Printf("writing command: %s %s %d\n", "pop", segment, index)
 
+	switch segment {
+	case "local":
+		c.writePopSegment("LCL", index)
+	case "argument":
+		c.writePopSegment("ARG", index)
+	case "this":
+		c.writePopSegment("THIS", index)
+	case "that":
+		c.writePopSegment("THAT", index)
+	case "temp":
+		c.writePopTemp(index)
+	default:
+		fmt.Printf("no matching segment for pop operation: %s", segment)
+		return
+	}
+
+}
+
+func (c *CodeWriter) writePopSegment(dest string, index int) {
+	lines := []string{
+		// put index into D
+		fmt.Sprintf("@%d", index),
+		"D=A",
+		// calculate dest address
+		fmt.Sprintf("@%s", dest),
+		"A=D+M",
+		"D=A",
+		// store dest address
+		"@R13",
+		"M=D",
+		// pop the value from the stack
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		// set memory to the stored address
+		"@R13",
+		"A=M",
+		// set the value at the address
+		"M=D",
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) writePopTemp(index int) {
+	lines := []string{
+		// put index into D
+		fmt.Sprintf("@%d", index),
+		"D=A",
+		// calculate dest address
+		"@TEMP",
+		"D=D+A",
+		// store dest address
+		"@R13",
+		"M=D",
+		// pop the value from the stack
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		// set memory to the stored address
+		"@R13",
+		"A=M",
+		// set the value at the address
+		"M=D",
+	}
+	c.writeLines(lines)
 }
 
 func (c *CodeWriter) writeLines(lines []string) {
