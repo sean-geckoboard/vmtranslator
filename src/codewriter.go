@@ -3,6 +3,8 @@ package src
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type CodeWriter struct {
@@ -203,6 +205,8 @@ func (c *CodeWriter) WritePush(segment string, index int) {
 		c.writePushTemp(index)
 	case "pointer":
 		c.writePushPointer(index)
+	case "static":
+		c.writePushStatic(index)
 	default:
 		fmt.Printf("no matching segment for pop operation: %s", segment)
 		return
@@ -259,6 +263,20 @@ func (c *CodeWriter) writePushPointer(index int) {
 	c.writeLines(lines)
 }
 
+func (c *CodeWriter) writePushStatic(index int) {
+	filename := c.getFileName()
+	lines := []string{
+		fmt.Sprintf("@%s.%d", filename, index),
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+	}
+	c.writeLines(lines)
+}
+
 func (c *CodeWriter) WritePop(segment string, index int) {
 
 	switch segment {
@@ -274,6 +292,8 @@ func (c *CodeWriter) WritePop(segment string, index int) {
 		c.writePopTemp(index)
 	case "pointer":
 		c.writePopPointer(index)
+	case "static":
+		c.writePopStatic(index)
 	default:
 		fmt.Printf("no matching segment for pop operation: %s", segment)
 		return
@@ -350,10 +370,30 @@ func (c *CodeWriter) writePopPointer(index int) {
 	c.writeLines(lines)
 }
 
+func (c *CodeWriter) writePopStatic(index int) {
+	filename := c.getFileName()
+	lines := []string{
+		// pop the value from the stack
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		// set hte address to the variable
+		fmt.Sprintf("@%s.%d", filename, index),
+		// set the value at the address
+		"M=D",
+	}
+	c.writeLines(lines)
+}
+
 func (c *CodeWriter) writeLines(lines []string) {
 	var line string
 	for _, l := range lines {
 		line = line + l + "\n"
 	}
 	c.file.WriteString(line)
+}
+
+func (c *CodeWriter) getFileName() string {
+	return strings.TrimSuffix(filepath.Base(c.file.Name()), filepath.Ext(c.file.Name()))
 }
