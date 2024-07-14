@@ -28,7 +28,6 @@ func (c *CodeWriter) Close() {
 const ()
 
 func (c *CodeWriter) WriteArithmetic(command string) {
-	fmt.Printf("writing command: %s\n", command)
 
 	switch command {
 	case "add":
@@ -178,7 +177,6 @@ func (c *CodeWriter) WriteArithmetic(command string) {
 }
 
 func (c *CodeWriter) WritePush(segment string, index int) {
-	fmt.Printf("writing command: %s %s %d\n", "push", segment, index)
 
 	switch segment {
 	case "constant":
@@ -203,6 +201,8 @@ func (c *CodeWriter) WritePush(segment string, index int) {
 		c.writePushSegment("THAT", index)
 	case "temp":
 		c.writePushTemp(index)
+	case "pointer":
+		c.writePushPointer(index)
 	default:
 		fmt.Printf("no matching segment for pop operation: %s", segment)
 		return
@@ -242,8 +242,24 @@ func (c *CodeWriter) writePushTemp(index int) {
 	c.writeLines(lines)
 }
 
+func (c *CodeWriter) writePushPointer(index int) {
+	location := "R3" // this
+	if index == 1 {
+		location = "R4" // that
+	}
+	lines := []string{
+		fmt.Sprintf("@%s", location),
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+	}
+	c.writeLines(lines)
+}
+
 func (c *CodeWriter) WritePop(segment string, index int) {
-	fmt.Printf("writing command: %s %s %d\n", "pop", segment, index)
 
 	switch segment {
 	case "local":
@@ -256,6 +272,8 @@ func (c *CodeWriter) WritePop(segment string, index int) {
 		c.writePopSegment("THAT", index)
 	case "temp":
 		c.writePopTemp(index)
+	case "pointer":
+		c.writePopPointer(index)
 	default:
 		fmt.Printf("no matching segment for pop operation: %s", segment)
 		return
@@ -309,6 +327,24 @@ func (c *CodeWriter) writePopTemp(index int) {
 		"@R13",
 		"A=M",
 		// set the value at the address
+		"M=D",
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) writePopPointer(index int) {
+	location := "R3" // this
+	if index == 1 {
+		location = "R4" // that
+	}
+	lines := []string{
+		// pop the value from the stack
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		// set memory to the stored address
+		fmt.Sprintf("@%s", location),
 		"M=D",
 	}
 	c.writeLines(lines)

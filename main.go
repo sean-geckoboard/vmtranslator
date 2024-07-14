@@ -23,6 +23,8 @@ func main() {
 	err := src.Translate(inFileName, outFileName)
 	if err != nil {
 		fmt.Printf("err: %s", err)
+		return
 	}
 
+	fmt.Println("done, success")
 }
