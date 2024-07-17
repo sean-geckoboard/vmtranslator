@@ -8,26 +8,70 @@ import (
 )
 
 type CodeWriter struct {
-	file      *os.File
-	eqCounter int
+	outFile         *os.File
+	eqCounter       int
+	fileName        string
+	currentFunction string
 }
 
-func NewCodeWriter(fileName string) *CodeWriter {
-	f, err := os.Create(fileName)
+func NewCodeWriter(outFileName string) *CodeWriter {
+	f, err := os.Create(outFileName)
 	if err != nil {
 		panic(err)
 	}
 
 	return &CodeWriter{
-		file: f,
+		outFile:         f,
+		currentFunction: "Global",
 	}
 }
 
 func (c *CodeWriter) Close() {
-	c.file.Close()
+	c.outFile.Close()
 }
 
-const ()
+func (c *CodeWriter) setFileName(fileName string) {
+	c.fileName = getJustFileName(fileName)
+}
+
+func (c *CodeWriter) WriteLabel(label string) {
+	lines := []string{
+		fmt.Sprintf("(%s.%s$%s)", c.fileName, c.currentFunction, label),
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) WriteGoto(label string) {
+	lines := []string{
+		fmt.Sprintf("@%s.%s$%s", c.fileName, c.currentFunction, label),
+		"0;JMP",
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) WriteIf(label string) {
+	lines := []string{
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		fmt.Sprintf("@%s.%s$%s", c.fileName, c.currentFunction, label),
+		"D;JNE",
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) WriteFunction(functionName string, nVars int) {
+
+}
+
+func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
+
+}
+
+func (c *CodeWriter) WriteReturn() {
+
+}
 
 func (c *CodeWriter) WriteArithmetic(command string) {
 
@@ -264,9 +308,8 @@ func (c *CodeWriter) writePushPointer(index int) {
 }
 
 func (c *CodeWriter) writePushStatic(index int) {
-	filename := c.getFileName()
 	lines := []string{
-		fmt.Sprintf("@%s.%d", filename, index),
+		fmt.Sprintf("@%s.%d", c.fileName, index),
 		"D=M",
 		"@SP",
 		"A=M",
@@ -371,15 +414,14 @@ func (c *CodeWriter) writePopPointer(index int) {
 }
 
 func (c *CodeWriter) writePopStatic(index int) {
-	filename := c.getFileName()
 	lines := []string{
 		// pop the value from the stack
 		"@SP",
 		"M=M-1",
 		"A=M",
 		"D=M",
-		// set hte address to the variable
-		fmt.Sprintf("@%s.%d", filename, index),
+		// set the address to the variable
+		fmt.Sprintf("@%s.%d", c.fileName, index),
 		// set the value at the address
 		"M=D",
 	}
@@ -391,9 +433,9 @@ func (c *CodeWriter) writeLines(lines []string) {
 	for _, l := range lines {
 		line = line + l + "\n"
 	}
-	c.file.WriteString(line)
+	c.outFile.WriteString(line)
 }
 
-func (c *CodeWriter) getFileName() string {
-	return strings.TrimSuffix(filepath.Base(c.file.Name()), filepath.Ext(c.file.Name()))
+func getJustFileName(fileName string) string {
+	return strings.TrimSuffix(filepath.Base(fileName), filepath.Ext(fileName))
 }

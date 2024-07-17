@@ -14,6 +14,8 @@ func Translate(inFileName string, outFileName string) error {
 	cw := NewCodeWriter(outFileName)
 	defer cw.Close()
 
+	cw.setFileName(inFileName)
+
 	for p.HasMoreLines() {
 		p.Advance()
 		if !p.HasMoreLines() {
@@ -29,11 +31,17 @@ func Translate(inFileName string, outFileName string) error {
 				cw.WritePush(c.arg1, c.arg2)
 			case CPop:
 				cw.WritePop(c.arg1, c.arg2)
+			case CLabel:
+				cw.WriteLabel(c.arg1)
+			case CGoto:
+				cw.WriteGoto(c.arg1)
+			case CIf:
+				cw.WriteIf(c.arg1)
 			default:
 				fmt.Printf("cannot handle command of type: %d\n", c.commandType)
 			}
 		} else {
-			fmt.Println("error: nil command ??")
+			panic("error: nil command ??")
 		}
 	}
 

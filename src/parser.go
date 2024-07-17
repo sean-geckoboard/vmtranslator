@@ -102,7 +102,7 @@ func parse(line string) command {
 	case "push":
 		c.commandType = CPush
 		c.arg1 = tokens[1]
-		intVal, err := strconv.Atoi(tokens[2])
+		intVal, err := strconv.Atoi(strings.TrimSpace(tokens[2]))
 		if err != nil {
 			panic(err)
 		}
@@ -110,11 +110,22 @@ func parse(line string) command {
 	case "pop":
 		c.commandType = CPop
 		c.arg1 = tokens[1]
-		intVal, err := strconv.Atoi(tokens[2])
+		intVal, err := strconv.Atoi(strings.TrimSpace(tokens[2]))
 		if err != nil {
 			panic(err)
 		}
 		c.arg2 = intVal
+	case "label":
+		c.commandType = CLabel
+		c.arg1 = tokens[1]
+	case "goto":
+		c.commandType = CGoto
+		c.arg1 = tokens[1]
+	case "if-goto":
+		c.commandType = CIf
+		c.arg1 = tokens[1]
+	default:
+		fmt.Printf("unknown comman: %s\n", tokens[0])
 	}
 	return c
 }
