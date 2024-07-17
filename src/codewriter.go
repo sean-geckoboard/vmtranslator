@@ -12,6 +12,7 @@ type CodeWriter struct {
 	eqCounter       int
 	fileName        string
 	currentFunction string
+	returnIndices   map[string]int
 }
 
 func NewCodeWriter(outFileName string) *CodeWriter {
@@ -22,7 +23,7 @@ func NewCodeWriter(outFileName string) *CodeWriter {
 
 	return &CodeWriter{
 		outFile:         f,
-		currentFunction: "Global",
+		currentFunction: "Sys.init",
 	}
 }
 
@@ -32,6 +33,117 @@ func (c *CodeWriter) Close() {
 
 func (c *CodeWriter) setFileName(fileName string) {
 	c.fileName = getJustFileName(fileName)
+}
+
+func (c *CodeWriter) WriteFunction(functionName string, nVars int) {
+	lines := []string{
+		fmt.Sprintf("(%s)", functionName),
+	}
+	// push 0 to the stack for each local var to init to 0
+	for i := 0; i < nVars; i++ {
+		pushLines := []string{
+			"@0",
+			"D=A",
+			"@SP",
+			"A=M",
+			"M=D",
+			"@SP",
+			"M=M+1",
+		}
+		lines = append(lines, pushLines...)
+	}
+	c.writeLines(lines)
+}
+
+func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
+	lines := []string{
+		"// call " + functionName,
+	}
+
+	// return index is per function and increases for each call
+	returnIndex, ok := c.returnIndices[functionName]
+	if !ok {
+		returnIndex = 0
+	}
+	c.returnIndices[functionName] = returnIndex + 1
+
+	// wire up label and gotos
+	lines = append(lines, []string{
+		fmt.Sprintf("@%s", functionName),
+		"0;JMP",
+		// write more here
+		fmt.Sprintf("(%s$ret%d)", c.currentFunction, returnIndex),
+	}...)
+	c.writeLines(lines)
+
+}
+
+func (c *CodeWriter) WriteReturn() {
+	lines := []string{
+		"@LCL",
+		"D=M",
+		// store frame
+		"@R14",
+		"M=D",
+		// calculate and store return address
+		"@5",
+		"D=D-A",
+		"@R15",
+		"M=D",
+		// pop value into D
+		"@SP",
+		"M=M-1",
+		"A=M",
+		"D=M",
+		// store D in ARG 0
+		"@ARG",
+		"A=M",
+		"M=D",
+		// set SP to ARG + 1
+		"@ARG",
+		"D=M+1",
+		"@SP",
+		"M=D",
+		// THAT = frame - 1
+		"@R14", // get frame
+		"D=M",
+		"D=D-1",
+		"A=D",
+		"D=M",
+		"@THAT",
+		"M=D",
+		// THIS = frame - 2
+		"@R14", // get frame
+		"D=M",
+		"@2",
+		"D=D-A",
+		"A=D",
+		"D=M",
+		"@THIS",
+		"M=D",
+		// ARG = frame - 3
+		"@R14", // get frame
+		"D=M",
+		"@3",
+		"D=D-A",
+		"A=D",
+		"D=M",
+		"@ARG",
+		"M=D",
+		// LCL = frame - 4
+		"@R14", // get frame
+		"D=M",
+		"@4",
+		"D=D-A",
+		"A=D",
+		"D=M",
+		"@LCL",
+		"M=D",
+		// goto return address
+		"@R15",
+		"0;JMP",
+	}
+	c.writeLines(lines)
 }
 
 func (c *CodeWriter) WriteLabel(label string) {
@@ -59,18 +171,6 @@ func (c *CodeWriter) WriteIf(label string) {
 		"D;JNE",
 	}
 	c.writeLines(lines)
-}
-
-func (c *CodeWriter) WriteFunction(functionName string, nVars int) {
-
-}
-
-func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
-
-}
-
-func (c *CodeWriter) WriteReturn() {
-
 }
 
 func (c *CodeWriter) WriteArithmetic(command string) {

@@ -37,6 +37,12 @@ func Translate(inFileName string, outFileName string) error {
 				cw.WriteGoto(c.arg1)
 			case CIf:
 				cw.WriteIf(c.arg1)
+			case CFunction:
+				cw.WriteFunction(c.arg1, c.arg2)
+			case CCall:
+				cw.WriteCall(c.arg1, c.arg2)
+			case CReturn:
+				cw.WriteReturn()
 			default:
 				fmt.Printf("cannot handle command of type: %d\n", c.commandType)
 			}
