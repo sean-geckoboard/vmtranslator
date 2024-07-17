@@ -20,15 +20,30 @@ func NewCodeWriter(outFileName string) *CodeWriter {
 	if err != nil {
 		panic(err)
 	}
-
-	return &CodeWriter{
+	cw := &CodeWriter{
 		outFile:         f,
 		currentFunction: "Sys.init",
+		returnIndices:   map[string]int{},
 	}
+	cw.writeBootstrap()
+	return cw
 }
 
 func (c *CodeWriter) Close() {
 	c.outFile.Close()
+}
+
+func (c *CodeWriter) writeBootstrap() {
+	// set SP = 256
+	lines := []string{
+		"@256",
+		"D=A",
+		"@SP",
+		"M=D",
+	}
+	c.writeLines(lines)
+	// call Sys.init
+	c.WriteCall("Sys.init", 0)
 }
 
 func (c *CodeWriter) setFileName(fileName string) {
@@ -56,9 +71,7 @@ func (c *CodeWriter) WriteFunction(functionName string, nVars int) {
 }
 
 func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
-	lines := []string{
-		"// call " + functionName,
-	}
+	lines := []string{}
 
 	// return index is per function and increases for each call
 	returnIndex, ok := c.returnIndices[functionName]

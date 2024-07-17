@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"cloncode.com/vmtranslator/src"
@@ -14,17 +15,75 @@ func main() {
 		return
 	}
 	inFileName := os.Args[1]
-	outFileName := strings.Split(inFileName, ".vm")[0] + ".asm"
-	if outFileName == "" {
-		fmt.Println("failed to parse input file, expected: FileIn.vm ")
+	if inFileName == "" {
+		fmt.Println("failed to parse inFileName ")
 		return
 	}
 
-	err := src.Translate(inFileName, outFileName)
-	if err != nil {
-		fmt.Printf("err: %s", err)
-		return
+	isDir := isDir(inFileName)
+
+	outFileName := fmt.Sprintf("%s.asm", getJustFileName(inFileName))
+	fmt.Printf("output file: %s\n", outFileName)
+
+	var inFiles []string
+
+	if isDir {
+		fmt.Printf("translating directory: %s\n", inFileName)
+		inFiles = getFilesInDir(inFileName)
+		for _, v := range inFiles {
+			fmt.Printf("translating file: %s\n", v)
+		}
+	} else {
+		fmt.Printf("translating file: %s\n", inFileName)
+		inFiles = []string{inFileName}
+	}
+
+	cw := src.NewCodeWriter(outFileName)
+	defer cw.Close()
+
+	for _, inFile := range inFiles {
+		err := src.Translate(inFile, cw)
+		if err != nil {
+			fmt.Printf("err: %s", err)
+			return
+		}
 	}
 
 	fmt.Println("done, success")
+}
+
+func isDir(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		// handle the error and return
+		fmt.Printf("err reading file: %w", err)
+	}
+
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		// handle the error and return
+		fmt.Printf("err stat file: %w", err)
+	}
+
+	return fileInfo.IsDir()
+}
+
+func getFilesInDir(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		fmt.Printf("failed to read dir: %w", err)
+		return nil
+	}
+
+	fileNames := []string{}
+	for _, e := range entries {
+		fileNames = append(fileNames, fmt.Sprintf("%s/%s", dir, e.Name()))
+	}
+	return fileNames
+}
+
+func getJustFileName(fileName string) string {
+	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }

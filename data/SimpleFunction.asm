@@ -1,3 +1,10 @@
+@256
+D=A
+@SP
+M=D
+@Sys.init
+0;JMP
+(Sys.init$ret0)
 (SimpleFunction.test)
 @0
 D=A
@@ -139,4 +146,5 @@ A=D
 D=M
 @LCL
 M=D
-
+@R15
+0;JMP

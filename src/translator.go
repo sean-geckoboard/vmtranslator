@@ -4,15 +4,12 @@ import (
 	"fmt"
 )
 
-func Translate(inFileName string, outFileName string) error {
+func Translate(inFileName string, cw *CodeWriter) error {
 	p, err := NewParser(inFileName)
 	if err != nil {
 		return fmt.Errorf("new parser: %w", err)
 	}
 	defer p.Close()
-
-	cw := NewCodeWriter(outFileName)
-	defer cw.Close()
 
 	cw.setFileName(inFileName)
 
