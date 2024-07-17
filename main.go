@@ -20,14 +20,15 @@ func main() {
 		return
 	}
 
-	isDir := isDir(inFileName)
-
+	// output file
 	outFileName := fmt.Sprintf("%s.asm", getJustFileName(inFileName))
 	fmt.Printf("output file: %s\n", outFileName)
+	cw := src.NewCodeWriter(outFileName)
+	defer cw.Close()
 
+	// input files
 	var inFiles []string
-
-	if isDir {
+	if isDir(inFileName) {
 		fmt.Printf("translating directory: %s\n", inFileName)
 		inFiles = getFilesInDir(inFileName)
 		for _, v := range inFiles {
@@ -38,9 +39,7 @@ func main() {
 		inFiles = []string{inFileName}
 	}
 
-	cw := src.NewCodeWriter(outFileName)
-	defer cw.Close()
-
+	// translate
 	for _, inFile := range inFiles {
 		err := src.Translate(inFile, cw)
 		if err != nil {
@@ -55,7 +54,6 @@ func main() {
 func isDir(path string) bool {
 	file, err := os.Open(path)
 	if err != nil {
-		// handle the error and return
 		fmt.Printf("err reading file: %w", err)
 	}
 
@@ -63,7 +61,6 @@ func isDir(path string) bool {
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		// handle the error and return
 		fmt.Printf("err stat file: %w", err)
 	}
 
