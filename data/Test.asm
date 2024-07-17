@@ -1,0 +1,10 @@
+@256
+D=A
+@SP
+M=D
+@Bar.ret0
+D=A
+@SP
+A=M
+M=D
+(Bar.ret0)

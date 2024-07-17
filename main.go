@@ -11,7 +11,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("missing arguments, expected: ./vmtranslator FileIn.vm")
+		fmt.Println("missing arguments, expected: ./vmtranslator [File or Dir path]")
 		return
 	}
 	inFileName := os.Args[1]

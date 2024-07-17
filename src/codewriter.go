@@ -40,10 +40,10 @@ func (c *CodeWriter) writeBootstrap() {
 		"D=A",
 		"@SP",
 		"M=D",
+		"@Sys.init",
+		"0;JMP",
 	}
 	c.writeLines(lines)
-	// call Sys.init
-	c.WriteCall("Sys.init", 0)
 }
 
 func (c *CodeWriter) setFileName(fileName string) {
@@ -68,27 +68,39 @@ func (c *CodeWriter) WriteFunction(functionName string, nVars int) {
 		lines = append(lines, pushLines...)
 	}
 	c.writeLines(lines)
+	c.currentFunction = functionName
+
 }
 
 func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
 	lines := []string{}
 
 	// return index is per function and increases for each call
-	returnIndex, ok := c.returnIndices[functionName]
+	returnIndex, ok := c.returnIndices[c.currentFunction]
 	if !ok {
 		returnIndex = 0
 	}
-	c.returnIndices[functionName] = returnIndex + 1
+	c.returnIndices[c.currentFunction] = returnIndex + 1
+	returnLabel := fmt.Sprintf("%s$ret%d", c.currentFunction, returnIndex)
 
 	// wire up label and gotos
 	lines = append(lines, []string{
+		// add new variable for label
+		fmt.Sprintf("@%s", returnLabel),
+		"D=A",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+
 		fmt.Sprintf("@%s", functionName),
 		"0;JMP",
+
 		// write more here
-		fmt.Sprintf("(%s$ret%d)", c.currentFunction, returnIndex),
+		fmt.Sprintf("(%s)", returnLabel),
 	}...)
 	c.writeLines(lines)
-
 }
 
 func (c *CodeWriter) WriteReturn() {
