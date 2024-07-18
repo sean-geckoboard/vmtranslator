@@ -36,6 +36,7 @@ func (c *CodeWriter) Close() {
 func (c *CodeWriter) writeBootstrap() {
 	// set SP = 256
 	lines := []string{
+		// SP
 		"@256",
 		"D=A",
 		"@SP",
@@ -85,19 +86,61 @@ func (c *CodeWriter) WriteCall(functionName string, nArgs int) {
 
 	// wire up label and gotos
 	lines = append(lines, []string{
-		// add new variable for label
-		fmt.Sprintf("@%s", returnLabel),
+		// push return address
+		fmt.Sprintf("@%s", returnLabel), // add new variable for label
 		"D=A",
 		"@SP",
 		"A=M",
 		"M=D",
 		"@SP",
 		"M=M+1",
-
+		// push LCL
+		"@LCL",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+		// push ARG
+		"@ARG",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+		// push THIS
+		"@THIS",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+		// push THAT
+		"@THAT",
+		"D=M",
+		"@SP",
+		"A=M",
+		"M=D",
+		"@SP",
+		"M=M+1",
+		// ARG = SP - (5 + nArgs)
+		"@SP",
+		"D=M",
+		fmt.Sprintf("@%d", nArgs+5),
+		"D=D-A",
+		"@ARG",
+		"M=D",
+		// LCL = SP
+		"@SP",
+		"D=M",
+		"@LCL",
+		"M=D",
+		// goto f
 		fmt.Sprintf("@%s", functionName),
 		"0;JMP",
-
-		// write more here
 		fmt.Sprintf("(%s)", returnLabel),
 	}...)
 	c.writeLines(lines)
@@ -113,6 +156,8 @@ func (c *CodeWriter) WriteReturn() {
 		// calculate and store return address
 		"@5",
 		"D=D-A",
+		"A=D",
+		"D=M",
 		"@R15",
 		"M=D",
 		// pop value into D
@@ -166,6 +211,7 @@ func (c *CodeWriter) WriteReturn() {
 		"M=D",
 		// goto return address
 		"@R15",
+		"A=M",
 		"0;JMP",
 	}
 	c.writeLines(lines)

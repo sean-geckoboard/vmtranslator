@@ -135,6 +135,11 @@ func parse(line string) command {
 	case "call":
 		c.commandType = CCall
 		c.arg1 = tokens[1]
+		intVal, err := strconv.Atoi(strings.TrimSpace(tokens[2]))
+		if err != nil {
+			panic(err)
+		}
+		c.arg2 = intVal
 	case "return":
 		c.commandType = CReturn
 	default:
